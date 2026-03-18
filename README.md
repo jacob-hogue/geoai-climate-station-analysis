@@ -53,7 +53,7 @@ geoai-climate-station-analysis/
 pip install -r requirements.txt
 ```
 
-No API key is required. The `meteostat` library fetches GHCN data directly from NOAA's public servers.
+The `meteostat` library fetches GHCN data directly from NOAA's public servers.
 
 ---
 

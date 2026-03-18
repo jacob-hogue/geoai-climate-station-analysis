@@ -3,6 +3,4 @@ __pycache__/
 .venv/
 venv/
 data/
-plots/
-*.png
 .DS_Store

@@ -42,7 +42,7 @@ geoai-climate-station-analysis/
 ├── requirements.txt
 ├── tests/
 │   └── test_analysis.py
-└── plots/             # generated at runtime, not committed
+└── plots/             # generated charts
 ```
 
 ---
@@ -93,6 +93,22 @@ Plots are saved to `plots/`:
 
 ---
 
+## Results
+
+**Monthly temperature by climate zone (1950-2023)**
+
+![Temperature time series](plots/temperature_timeseries.png)
+
+**Annual temperature anomaly vs 1981-2010 baseline**
+
+![Anomaly heatmap](plots/anomaly_heatmap.png)
+
+**Zone-averaged decadal mean temperature**
+
+![Decadal trends](plots/decadal_trends.png)
+
+---
+
 ## What I learned
 
 The station selection piece was the most surprising part. My first instinct was to just take the geographically nearest station for each city, and that worked fine for US and European cities with dense networks. For cities like Los Angeles and several polar stations, the nearest station had almost no historical data before 2000. Checking the 15 nearest candidates and picking the one with the most complete record fixed the gaps without requiring any manual configuration.
@@ -113,7 +129,7 @@ The spot-check against published NOAA normals all came back within 4°F. Miami a
 pytest tests/
 ```
 
-The tests cover anomaly computation, outlier detection, and decadal grouping using synthetic seasonal data. All 11 tests run without network access.
+Three tests cover the core math: anomaly baseline subtraction, outlier detection, and warming trend direction. All run without network access. For full data verification, run `python analysis.py`.
 
 ---
 

@@ -145,17 +145,26 @@ def plot_anomaly_heatmap(records: list[StationRecord]) -> None:
 def plot_decadal_trends(records: list[StationRecord]) -> None:
     """
     Grouped bar chart: x-axis = decade (1950s through 2020s),
-    one bar group per climate zone, bars colored by zone.
+    one bar group per climate zone, bars show average temperature anomaly
+    relative to the 1981-2010 baseline.
+
+    Showing anomalies instead of absolute temperatures removes the baseline
+    difference between zones (polar cities are always colder than tropical),
+    so the warming trend becomes visible across all zones on the same scale.
     """
     decades = list(range(1950, 2030, 10))
     zone_names = list(ZONE_COLORS.keys())
 
-    # Build a dict: zone_name -> Series indexed by decade, value = mean temp across zone's cities.
+    # Compute anomalies for each city, then group into decades.
     zone_decade_means = {zone: {} for zone in zone_names}
     for record in records:
         if record.df.empty or "temp" not in record.df.columns:
             continue
-        decadal_means = compute_decadal_means(record.df, "temp")
+        anomalies = compute_anomalies(record.df)
+        if anomalies.empty:
+            continue
+        anomaly_df = anomalies.to_frame(name="anomaly")
+        decadal_means = compute_decadal_means(anomaly_df, "anomaly")
         if decadal_means.empty:
             continue
         for decade, row in decadal_means.iterrows():
@@ -164,9 +173,7 @@ def plot_decadal_trends(records: list[StationRecord]) -> None:
                 zone_decade_means[zone][decade] = []
             zone_decade_means[zone][decade].append(row["mean_value"])
 
-    # Average across cities within each zone per decade.
-    # Skip NaN values before averaging — a city with no data in a given decade
-    # would otherwise make the whole zone average NaN.
+    # Average across cities within each zone per decade, skipping NaN values.
     zone_decade_averages = {}
     for zone_name, decade_data in zone_decade_means.items():
         zone_decade_averages[zone_name] = {}
@@ -179,7 +186,6 @@ def plot_decadal_trends(records: list[StationRecord]) -> None:
 
     number_of_zones = len(zone_names)
     bar_width = 0.15
-    # Center each group of zone bars around the decade tick.
     offsets = [(i - number_of_zones / 2 + 0.5) * bar_width for i in range(number_of_zones)]
 
     for zone_index, zone_name in enumerate(zone_names):
@@ -199,12 +205,16 @@ def plot_decadal_trends(records: list[StationRecord]) -> None:
                 label=zone_name.capitalize(),
             )
 
+    # Zero line marks the 1981-2010 baseline. Bars above it are warmer than
+    # average, bars below are cooler.
+    axis.axhline(0, color=LIGHT_TEXT, linewidth=0.8, linestyle="--", alpha=0.5)
+
     decade_labels = [f"{d}s" for d in decades]
     axis.set_xticks(range(len(decades)))
     axis.set_xticklabels(decade_labels, fontsize=9)
-    axis.set_ylabel("Mean temperature (°F)", fontsize=9)
+    axis.set_ylabel("Temperature anomaly (°F) vs 1981-2010 baseline", fontsize=9)
     axis.set_xlabel("Decade", fontsize=9)
-    axis.set_title("Zone-Averaged Decadal Mean Temperature (1950s-2020s)", fontsize=13, pad=10)
+    axis.set_title("Zone-Averaged Decadal Temperature Anomaly (1950s-2020s)", fontsize=13, pad=10)
 
     legend_patches = [
         mpatches.Patch(color=ZONE_COLORS[zone], label=zone.capitalize())
